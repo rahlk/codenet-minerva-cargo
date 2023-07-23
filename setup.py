@@ -23,6 +23,7 @@ setup(
         "scikit-learn",
         "tackle-dgi",
         "mo-sql-parsing==9.422.23190",
+        "py2neo==2021.1.3"
     ],
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",

@@ -15,4 +15,4 @@
 ################################################################################
 
 from .transform_graph import TransformGraph
-from .logging import Log
+from .simple_logging import Log
