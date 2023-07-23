@@ -2,23 +2,23 @@ from py2neo import Graph, Node, Relationship
 import json
 import argparse
 
-# Step 1: Parse the command line arguments
+# Parse the command line arguments
 parser = argparse.ArgumentParser(description="Load a JSON file into Neo4j.")
 parser.add_argument('input_json', type=str, help="The JSON file to load.")
 args = parser.parse_args()
 
-# Step 2: Initialize the Neo4j database connection
+# Initialize the Neo4j database connection
 graph = Graph("http://localhost:7474", auth=("neo4j", "password"))  # Replace with your actual username and password
 
 def _purge_graph():
     graph.delete_all()
 
 def to_neo4j(input_json: str):
-    # Step 5: Load your JSON data
+    # Load your JSON data
     with open(input_json, 'r') as f:
         data = json.load(f)
 
-    # Step 6: Parse the JSON and add the nodes and edges
+    # Parse the JSON and add the nodes and edges
     for node in data['nodes']:
         if node['type'] == "SQLTable":
             continue
