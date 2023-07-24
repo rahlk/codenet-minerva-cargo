@@ -53,6 +53,7 @@ class Cargo:
         dgi_neo4j_auth: str = "neo4j/konveyor",
         verbose: bool = True,
     ):
+        self.transactions_json = None
         # namedtuple to match the internal signature of urlunparse
         Components = namedtuple(
             typename="Components",
@@ -90,8 +91,10 @@ class Cargo:
         with open(path_to_sdg_json, "r") as sdg_json:
             self.json_graph = json.load(sdg_json)
 
-        with open(transactions_json, "r") as txn_json:
-            self.transactions_json = json.load(txn_json)
+        if transactions_json is not None:
+            with open(transactions_json, "r") as txn_json:
+                self.transactions_json = json.load(txn_json)
+            
 
         self.json_graph["links"] = self.json_graph.pop("edges")
         self.nodes_dict = defaultdict()

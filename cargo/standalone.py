@@ -17,8 +17,9 @@
 from pathlib import Path
 import click
 import json
+from py2neo import Graph
 from cargo import Cargo
-
+from .utils.json_to_neo4j import to_neo4j
 
 @click.command()
 @click.option(
@@ -57,9 +58,27 @@ from cargo import Cargo
     default=Path.cwd(),
     help="Path to save the output JSON file",
 )
+@click.option(
+    "--neo4j",
+    type=bool,
+    default=False,
+    help="URI of the neo4j database to save the output in.",
+)
+@click.option(
+    "--neo4j-uri",
+    type=str,
+    default="neo4j:password@localhost:7474",
+    help="URI of the neo4j database to save the output in.",
+)
 def minerva_cargo(
-    max_partitions, app_dependency_graph, transactions, seed_partitions, output
-):
+    max_partitions: int, 
+    app_dependency_graph: Path, 
+    transactions: Path, 
+    seed_partitions: Path, 
+    output: Path, 
+    neo4j: bool,
+    neo4j_uri
+    ):
     """
     CLI version of CARGO a un-/semi-supervised partition refinement technique that uses a system dependence
     graph built using context and flow-sensitive static analysis of a monolithic application.
@@ -74,6 +93,12 @@ def minerva_cargo(
     with open(output.joinpath("partitions.json"), "w") as partitions_file:
         json.dump(partitions, partitions_file, indent=4, sort_keys=False)
     
+    if neo4j:
+        auth_str, uri = neo4j_uri.split("@")
+        auth_tuple = tuple(auth_str.split(":"))
+        neo4j_graph = Graph("http://"+uri, auth=auth_tuple)
+        neo4j_graph.delete_all()
+        to_neo4j(partitions, graph=neo4j_graph)
 
 def main():
     minerva_cargo()
