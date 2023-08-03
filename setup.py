@@ -22,6 +22,7 @@ setup(
         "tqdm",
         "scikit-learn",
         "tackle-dgi",
+        "Flask",
         "mo-sql-parsing==9.422.23190",
     ],
     classifiers=[
