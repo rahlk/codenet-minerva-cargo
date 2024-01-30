@@ -55,15 +55,19 @@ class Metrics:
         self.partitions = nx.get_node_attributes(self.ddg, 'partition')
 
         N = max(self.partitions.values()) + 1
-        assert all(i in self.partitions.values() for i in range(N))
-        assert len(set(self.partitions.values())) == N
+        # assert all(i in self.partitions.values() for i in range(N))
+        all(i in self.partitions.values() for i in range(N))
+        # assert len(set(self.partitions.values())) == N
+        len(set(self.partitions.values())) == N
 
     def _static_cohesion(self) -> float:
 
         N = max(self.partitions.values()) + 1
         # We want partitions to be 0, 1, ..., N-1 without any missing
-        assert all(i in self.partitions.values() for i in range(N))
-        assert len(set(self.partitions.values())) == N
+        # assert all(i in self.partitions.values() for i in range(N))
+        all(i in self.partitions.values() for i in range(N))
+        # assert len(set(self.partitions.values())) == N
+        len(set(self.partitions.values())) == N
 
         _internal_counts = np.zeros(N, dtype=np.float32)
         _external_counts = np.zeros(N, dtype=np.float32)

@@ -1,0 +1,12 @@
+# already in aipl
+scipy==1.10
+numpy==1.24.1
+pandas==1.4.3
+networkx==2.8.8
+
+# prod
+py2neo==2021.2.4
+tqdm==4.66.1
+scikit-learn==1.4.0
+tackle-dgi==0.1.0
+mo-sql-parsing==9.422.23190

@@ -27,16 +27,14 @@ from copy import deepcopy
 from py2neo import Graph
 from ipdb import set_trace
 from tqdm import tqdm
-from .utils import Log
-
 from collections import defaultdict, namedtuple
 from urllib.parse import urlunparse
+
 from .helper import *
 from .metrics import Metrics
 from .utils import TransformGraph
 
 import itertools
-
 
 class Cargo:
     """Context Sensitive Label Propagation for partitioning a monolith application into microservices."""
@@ -53,6 +51,9 @@ class Cargo:
         dgi_neo4j_auth: str = "neo4j/konveyor",
         verbose: bool = True,
     ):
+        
+        self.transactions_json = None
+
         # namedtuple to match the internal signature of urlunparse
         Components = namedtuple(
             typename="Components",
@@ -90,8 +91,9 @@ class Cargo:
         with open(path_to_sdg_json, "r") as sdg_json:
             self.json_graph = json.load(sdg_json)
 
-        with open(transactions_json, "r") as txn_json:
-            self.transactions_json = json.load(txn_json)
+        if transactions_json is not None:
+            with open(transactions_json, "r") as txn_json:
+                self.transactions_json = json.load(txn_json)
 
         self.json_graph["links"] = self.json_graph.pop("edges")
         self.nodes_dict = defaultdict()
@@ -151,9 +153,9 @@ class Cargo:
         Returns:
             nx.MultiDiGraph: A networkx graph
         """
-        Log.warn(
-            "Loading graphs from Neo4j database. This could take a few minutes to complete."
-        )
+        # Log.warn(
+        #     "Loading graphs from Neo4j database. This could take a few minutes to complete."
+        # )
         graph = Graph(neo4j_url, auth=(dgi_neo4j_uname, dgi_neo4j_passw))
         # For now, we'll ignore transactional call trace
         # TODO: Add context sensitivity to transactional call trace and then use that to partition.
@@ -164,9 +166,9 @@ class Cargo:
         )
 
         graph_data = cursor.data()
-        Log.info("DGI graph loaded from Neo4j.")
+        # Log.info("DGI graph loaded from Neo4j.")
         num_records = len(graph_data)
-        Log.info("Found %d records." % num_records)
+        # Log.info("Found %d records." % num_records)
 
         all_contexts = []
         self.all_context_graphs = []
@@ -288,14 +290,14 @@ class Cargo:
 
             num_matched = sum(matched.values())
 
-            Log.info(
-                "Matched {}/{} from the partition file to {}/{} in the program graph".format(
-                    num_matched,
-                    len(file_assignments),
-                    len(nx.get_node_attributes(G, "partition")),
-                    len(G.nodes),
-                )
-            )
+            # Log.info(
+            #     "Matched {}/{} from the partition file to {}/{} in the program graph".format(
+            #         num_matched,
+            #         len(file_assignments),
+            #         len(nx.get_node_attributes(G, "partition")),
+            #         len(G.nodes),
+            #     )
+            # )
 
             partitions = nx.get_node_attributes(G, "partition")
             if len(partitions.values()) != 0:
@@ -382,7 +384,7 @@ class Cargo:
         expanded_G = to_undirected_simple(expanded_G)
         fill_minus_one(expanded_G)
 
-        Log.info("Doing LPA on graph with database edges temporarily added")
+        # Log.info("Doing LPA on graph with database edges temporarily added")
 
         self.label_propagation(expanded_G)
 
@@ -404,13 +406,13 @@ class Cargo:
         fill_minus_one(prev_graph)
 
         if self.transaction_graph.number_of_edges() > 0:
-            Log.info(
-                "Found database transaction edges. Performing first round of label propogation."
-            )
+            # Log.info(
+            #     "Found database transaction edges. Performing first round of label propogation."
+            # )
             self.prop_db(prev_graph)
 
         num_ctx = len(self.all_context_graphs)
-        Log.info(f"Found {num_ctx} contexts.")
+        # Log.info(f"Found {num_ctx} contexts.")
         ctx_order = np.random.permutation(num_ctx)
 
         for ctx_num in ctx_order:
@@ -448,12 +450,12 @@ class Cargo:
                 labelprop_G.nodes[node]["partition"] = least_freq
                 unassigned_count += 1
 
-        if unassigned_count > 0:
-            Log.info(
-                "Warning : {} nodes out of {} were still -1 at the end of Labelprop, and so were assigned to partition {}".format(
-                    unassigned_count, len(labelprop_G.nodes), least_freq
-                )
-            )
+        # if unassigned_count > 0:
+        #     Log.info(
+        #         "Warning : {} nodes out of {} were still -1 at the end of Labelprop, and so were assigned to partition {}".format(
+        #             unassigned_count, len(labelprop_G.nodes), least_freq
+        #         )
+        #     )
 
         return labelprop_G
 
@@ -507,7 +509,7 @@ class Cargo:
                 labelprop_G.nodes[node_name]["partition"] = label_remapping[partition]
                 labelprop_G.nodes[node_name]["node_short_name"] = class_name
 
-        Log.info("Copied {} classes directly from the initial file".format(copy_count))
+        # Log.info("Copied {} classes directly from the initial file".format(copy_count))
 
     def run(
         self,
@@ -515,10 +517,10 @@ class Cargo:
         max_part: Optional[int] = None,
         labels_file: Union[str, Path, None] = None,
     ):
-        if init_labels == "file":
-            Log.info("Cargo with {} initial labels".format(labels_file))
-        else:
-            Log.info("Cargo with {} initial labels".format(init_labels))
+        # if init_labels == "file":
+        #     Log.info("Cargo with {} initial labels".format(labels_file))
+        # else:
+        #     Log.info("Cargo with {} initial labels".format(init_labels))
 
         labelprop_G = self.do_cargo(init_labels, max_part, labels_file)
         assignments = nx.get_node_attributes(labelprop_G, "partition")
@@ -534,26 +536,26 @@ class Cargo:
             num_init_partitions = max(init_partitions.values()) + 1
             num_gen_partitions = max(assignments.values()) + 1
 
-            Log.info(
-                "Max partitions : {}, File partitions : {}, Gen partitions : {}".format(
-                    max_part, num_init_partitions, num_gen_partitions
-                )
-            )
-            Log.info(
-                "Init partition sizes : {}".format(
-                    np.unique(list(init_partitions.values()), return_counts=True)[1]
-                )
-            )
+            # Log.info(
+            #     "Max partitions : {}, File partitions : {}, Gen partitions : {}".format(
+            #         max_part, num_init_partitions, num_gen_partitions
+            #     )
+            # )
+            # Log.info(
+            #     "Init partition sizes : {}".format(
+            #         np.unique(list(init_partitions.values()), return_counts=True)[1]
+            #     )
+            # )
         else:
             num_gen_partitions = max(assignments.values()) + 1
-            Log.info(
-                "Max partitions : {}, Gen partitions : {}".format(
-                    max_part, num_gen_partitions
-                )
-            )
+            # Log.info(
+            #     "Max partitions : {}, Gen partitions : {}".format(
+            #         max_part, num_gen_partitions
+            #     )
+            # )
 
         partition_sizes = np.unique(list(assignments.values()), return_counts=True)[1]
-        Log.info("Final partition sizes : {}".format(partition_sizes))
+        # Log.info("Final partition sizes : {}".format(partition_sizes))
         metrics = self.compute_metrics(labelprop_G)
 
         nx.set_node_attributes(
