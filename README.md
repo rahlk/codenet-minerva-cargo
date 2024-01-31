@@ -91,7 +91,7 @@ docker run --rm \
 # --seed-partitions=./path/to/seed/partitions.json   ## (optionally) provide user provided seed partitions.
 ```
 
-This will produced 2 files: `method_partitions.json` and `class_partitions.json` in the `$ARTIFACTS` folder. 
+This will produced 1 files: `partitions.json` in the `$ARTIFACTS` folder. 
 
 _Note: In this example, I am saving the partitions in the same folder as the input SDG.json._
 
