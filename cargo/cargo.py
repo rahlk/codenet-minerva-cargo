@@ -334,6 +334,8 @@ class Cargo:
 
             nodes = list(G.nodes())
 
+            random.seed(len(nodes)) # This makes the partitioning consistent, meaning rerunning the same data will give the same results.
+
             random.shuffle(nodes)
 
             for node in nodes:
