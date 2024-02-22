@@ -565,12 +565,15 @@ class Cargo:
         )
 
         method_graph_view = self.json_graph
-
+        
+        # define a default partition number, this way we avoid "gaps" in the partitions name by getting the next value available
+        defaultPartitionLabelNumber = num_gen_partitions if num_gen_partitions < max_part else max_part # TODO: consider to use max_part-1
+        
         for method_node in method_graph_view["nodes"]:
             if method_node["id"] in assignments:
                 method_node["partition"] = assignments[method_node["id"]]
             else:
-                method_node["partition"] = max_part + 1
+                method_node["partition"] = defaultPartitionLabelNumber # changed from fixed max_part to avoid "gaps" in the partitions name
             try:
                 method_node["centrality"] = labelprop_G.nodes[method_node["id"]][
                     "data_centrality"
