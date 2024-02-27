@@ -74,67 +74,6 @@ class Cargo:
 
             self.SDG.add_edge(node1, node2, weight=edge["weight"], type=edge["type"])
 
-    def assign_init_labels_via_package_name(self, G, init_labels, max_part, labels_file, partitions):
-        # Here it is using package name to set the initial partition distribution
-        packages_with_classes = {}
-        for node in G.nodes:
-            package_name = ".".join(node.split(".")[:-2])
-            if package_name in packages_with_classes:
-                packages_with_classes[package_name] += 1
-            else:
-                packages_with_classes[package_name] = 1
-
-        numberOfPackages = len(packages_with_classes)
-        if numberOfPackages < max_part:
-            # when the number of packages are lesser than max_part, it is better to assign the partitions randomly
-            self.assign_init_labels_via_round_robin(self, G, init_labels, max_part, labels_file, partitions)
-        else:
-            # packages = sorted(packages_with_classes.items(), key=lambda item: item[1]) # sort by frequency
-            packages = list(
-                dict(sorted(packages_with_classes.items(), key=lambda item: item[1])).keys()
-            )  # sort by frequency and parse to list
-
-            # # set default label value for every package
-            # for item in packages_with_classes:
-            #     packages_with_classes[item] = -1
-
-            # numberOfPartitions = numberOfPackages
-            # while numberOfPartitions >= max_part:
-
-            # use round robin with packages
-            counter = 0
-            for item in packages_with_classes:
-                packages_with_classes[item] = counter % max_part
-                counter += 1
-                if counter >= max_part:
-                    counter = 0
-
-            for node in G.nodes:
-                package_name = ".".join(node.split(".")[:-2])
-                G.nodes[node]["partition"] = packages_with_classes[package_name]
-
-    def assign_init_labels_via_round_robin(self, G, init_labels, max_part, labels_file, partitions):
-        # Here it is using round robin to set the initial partition distribution
-        if len(partitions) > 0:
-            num_partitions = max(partitions.values()) + 1
-        else:
-            num_partitions = 0
-
-        running_count = 0
-        if max_part is None:
-            for node in G.nodes:
-                if node not in partitions:
-                    G.nodes[node]["partition"] = running_count
-                    running_count += 1
-        else:
-            assert num_partitions <= max_part
-
-            for node in G.nodes:
-                if node not in partitions:
-                    assert num_partitions <= max_part
-                    G.nodes[node]["partition"] = running_count % max_part
-                    running_count = (running_count + 1) % max_part
-
     def _assign_init_labels(self, init_labels, max_part, labels_file):
         if init_labels == "random_methods":
             for i, node in enumerate(self.SDG.nodes):
