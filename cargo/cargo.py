@@ -232,29 +232,73 @@ class Cargo:
                 if node not in context_G:
                     context_G.add_node(node)
 
-    def assign_init_labels(self, G, init_labels, max_part, labels_file):
-        partitions = nx.get_node_attributes(G, "partition")
+    def assign_init_labels_via_package_name(self, G, init_labels, max_part, labels_file, partitions):
+        # Here it is using package name to set the initial partition distribution
+        packages_with_classes = {}
+        for node in G.nodes:
+            package_name = ".".join(node.split(".")[:-2])
+            if package_name in packages_with_classes:
+                packages_with_classes[package_name] += 1
+            else:
+                packages_with_classes[package_name] = 1
 
+        numberOfPackages = len(packages_with_classes)
+        if numberOfPackages < max_part:
+            # when the number of packages are lesser than max_part, it is better to assign the partitions randomly
+            self.assign_init_labels_via_round_robin(self, G, init_labels, max_part, labels_file, partitions)
+        else:
+            # packages = sorted(packages_with_classes.items(), key=lambda item: item[1]) # sort by frequency
+            packages = list(dict(sorted(packages_with_classes.items(), key=lambda item: item[1])).keys()) # sort by frequency and parse to list
+
+            # # set default label value for every package
+            # for item in packages_with_classes:
+            #     packages_with_classes[item] = -1
+
+            # numberOfPartitions = numberOfPackages
+            # while numberOfPartitions >= max_part:
+
+
+            # use round robin with packages
+            counter = 0
+            for item in packages_with_classes:
+                packages_with_classes[item] = counter % max_part
+                counter += 1
+                if counter >= max_part: 
+                    counter = 0
+
+            for node in G.nodes:
+                package_name = ".".join(node.split(".")[:-2])
+                G.nodes[node]["partition"] = packages_with_classes[package_name]
+
+
+    def assign_init_labels_via_round_robin(self, G, init_labels, max_part, labels_file, partitions):
+        # Here it is using round robin to set the initial partition distribution
         if len(partitions) > 0:
             num_partitions = max(partitions.values()) + 1
         else:
             num_partitions = 0
 
-        if init_labels == "auto":
-            running_count = 0
-            if max_part is None:
-                for node in G.nodes:
-                    if node not in partitions:
-                        G.nodes[node]["partition"] = running_count
-                        running_count += 1
-            else:
-                assert num_partitions <= max_part
+        running_count = 0
+        if max_part is None:
+            for node in G.nodes:
+                if node not in partitions:
+                    G.nodes[node]["partition"] = running_count
+                    running_count += 1
+        else:
+            assert num_partitions <= max_part
 
-                for node in G.nodes:
-                    if node not in partitions:
-                        assert num_partitions <= max_part
-                        G.nodes[node]["partition"] = running_count % max_part
-                        running_count = (running_count + 1) % max_part
+            for node in G.nodes:
+                if node not in partitions:
+                    assert num_partitions <= max_part
+                    G.nodes[node]["partition"] = running_count % max_part
+                    running_count = (running_count + 1) % max_part
+
+    def assign_init_labels(self, G, init_labels, max_part, labels_file):
+        partitions = nx.get_node_attributes(G, "partition")
+
+        if init_labels == "auto":
+            # self.assign_init_labels_via_round_robin(G, init_labels, max_part, labels_file, partitions)
+            self.assign_init_labels_via_package_name(G, init_labels, max_part, labels_file, partitions)
 
         elif init_labels == "file":
             if labels_file is None:
@@ -327,7 +371,7 @@ class Cargo:
         num_partitions = max(node_labels.values()) + 1
 
         assert len(node_labels) == len(G.nodes)
-        assert max(node_labels.values()) >= 0
+        assert max(node_labels.values()) >= 0 # if the value is < 0 than it means that some node did not received a inicial label
 
         while True:
             active = False
@@ -423,7 +467,8 @@ class Cargo:
             fill_minus_one(curr_graph)
             copy_partitions(prev_graph, curr_graph)
 
-            self.label_propagation(curr_graph)
+            # overwrites the initial distribution by randomization
+            self.label_propagation(curr_graph) # TODO: currently it always do the seeding, independently of seeding provided by user
 
             prev_graph = curr_graph
 
@@ -567,10 +612,10 @@ class Cargo:
         method_graph_view = self.json_graph
         
         # define a default partition number, this way we avoid "gaps" in the partitions name by getting the next value available
-        defaultPartitionLabelNumber = num_gen_partitions if num_gen_partitions < max_part else max_part # TODO: consider to use max_part-1
+        defaultPartitionLabelNumber = 10 #num_gen_partitions if num_gen_partitions < max_part else max_part # TODO: consider to use max_part-1
         
         for method_node in method_graph_view["nodes"]:
-            if method_node["id"] in assignments:
+            if method_node["id"] in assignments: # TODO: for daytrader7 there is 208 assignments, however, the sdg contains 308 nodes
                 method_node["partition"] = assignments[method_node["id"]]
             else:
                 method_node["partition"] = defaultPartitionLabelNumber # changed from fixed max_part to avoid "gaps" in the partitions name
