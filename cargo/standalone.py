@@ -15,50 +15,55 @@
 ################################################################################
 
 from pathlib import Path
-import click
+from typing_extensions import Annotated
+from typer import Option, Typer
 import json
 from cargo import Cargo
 
 
-@click.command()
-@click.option(
-    "--max-partitions",
-    "-k",
-    default=-1,
-    type=int,
-    help="The maximum number of partitions",
+app = Typer(
+    help="MKDATA: A tool to process Method2Test data to generate instruction tuning dataset for test generation."
 )
-@click.option(
-    "--app-dependency-graph",
-    "-i",
-    type=click.Path(exists=True),
-    help="Path to the input JSON file. This is a System Dependency Graph, "
-    "you can use the tool from https://github.com/konveyor/dgi-code-analyzer "
-    "to get the system dependency graph of an application.",
-)
-@click.option(
-    "--transactions",
-    "-t",
-    type=click.Path(exists=True),
-    default=None,
-    help="Path to the discovered transactions JSON file",
-)
-@click.option(
-    "--seed-partitions",
-    "-s",
-    type=click.Path(exists=True),
-    default=None,
-    help="Path to the initial seed partitions JSON file",
-)
-@click.option(
-    "--output",
-    "-o",
-    type=click.Path(path_type=Path),
-    default=Path.cwd(),
-    help="Path to save the output JSON file",
-)
+
+
+@app.command()
 def minerva_cargo(
-    max_partitions, app_dependency_graph, transactions, seed_partitions, output
+    app_dependency_graph: Annotated[
+        Path,
+        Option(
+            "--app-dependency-graph",
+            "-i",
+            help="Path to the input JSON file. This is a System Dependency Graph.",
+        ),
+    ],
+    output: Annotated[
+        Path,
+        Option(
+            "--output",
+            "-o",
+            help="Path to save the output JSON file.",
+        ),
+    ],
+    seed_partitions: Annotated[
+        Path,
+        Option(
+            "--seed-partitions",
+            "-s",
+            help="Path to the initial seed partitions JSON file.",
+        ),
+    ] = None,
+    transactions: Annotated[
+        Path,
+        Option(
+            "--transactions",
+            "-t",
+            help="Path to the discovered transactions JSON file.",
+        ),
+    ] = None,
+    max_partitions: Annotated[
+        int,
+        Option("--max-partitions", "-k", help="The maximum number of partitions."),
+    ] = -1,
 ):
     """
     CLI version of CARGO a un-/semi-supervised partition refinement technique that uses a system dependence
@@ -73,11 +78,7 @@ def minerva_cargo(
 
     with open(output.joinpath("partitions.json"), "w") as partitions_file:
         json.dump(partitions, partitions_file, indent=4, sort_keys=False)
-    
-
-def main():
-    minerva_cargo()
 
 
 if __name__ == "__main__":
-    main()
+    app()

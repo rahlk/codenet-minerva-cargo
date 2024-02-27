@@ -15,10 +15,8 @@
 ################################################################################
 
 from ast import Dict, List
-from collections import defaultdict, Counter
+from collections import defaultdict
 from statistics import mode, mean, variance
-from math import log2
-from ipdb import set_trace
 import re
 from mo_sql_parsing import parse
 
@@ -159,7 +157,7 @@ class TransformGraph:
                                                 ),
                                             }
                                         )
-                        except:
+                        except Exception as e:
                             pass
 
     @classmethod
