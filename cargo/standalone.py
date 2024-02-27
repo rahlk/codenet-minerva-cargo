@@ -15,6 +15,7 @@
 ################################################################################
 
 from pathlib import Path
+from typing import Union
 from typing_extensions import Annotated
 from typer import Option, Typer
 import json
@@ -45,36 +46,32 @@ def minerva_cargo(
         ),
     ],
     seed_partitions: Annotated[
-        Path,
+        str,
         Option(
             "--seed-partitions",
             "-s",
-            help="Path to the initial seed partitions JSON file.",
+            help="Initial seeding stratreagy for the partitioning. It can be a path to a JSON file or one of the following: random_methods, random_classes.",
         ),
-    ] = None,
-    transactions: Annotated[
-        Path,
-        Option(
-            "--transactions",
-            "-t",
-            help="Path to the discovered transactions JSON file.",
-        ),
-    ] = None,
+    ] = "random_methods",
     max_partitions: Annotated[
         int,
         Option("--max-partitions", "-k", help="The maximum number of partitions."),
-    ] = -1,
+    ] = 0,
 ):
     """
     CLI version of CARGO a un-/semi-supervised partition refinement technique that uses a system dependence
     graph built using context and flow-sensitive static analysis of a monolithic application.
     """
 
-    if seed_partitions is None:
-        seed_partitions = "auto"
+    if seed_partitions == "random_methods":
+        seed_partitions = "random_methods"
+    if seed_partitions == "random_classes":
+        seed_partitions = "random_classes"
+    elif Path(seed_partitions).exists():
+        seed_partitions = json.load(open(seed_partitions))
 
-    cargo = Cargo(json_sdg_path=app_dependency_graph, transactions_json=transactions)
-    partitions = cargo.run(init_labels=seed_partitions, max_part=max_partitions)
+    cargo = Cargo(json_sdg_path=app_dependency_graph)
+    partitions = cargo.execute(init_labels=seed_partitions, max_part=max_partitions)
 
     with open(output.joinpath("partitions.json"), "w") as partitions_file:
         json.dump(partitions, partitions_file, indent=4, sort_keys=False)

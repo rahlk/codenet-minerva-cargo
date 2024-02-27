@@ -50,9 +50,7 @@ class TransformGraph:
                         if txn["sql"] in ["BEGIN", "COMMIT", "ROLLBACK"]:
                             continue
 
-                        class_name, method_name = __extract_class_and_method_names(
-                            txn["stacktrace"][-1]["method"]
-                        )
+                        class_name, method_name = __extract_class_and_method_names(txn["stacktrace"][-1]["method"])
 
                         sql_str = txn["sql"].replace("?", "PLACEHOLDER")
                         try:
@@ -74,9 +72,7 @@ class TransformGraph:
                                         "children": [
                                             {
                                                 "source": db_table,
-                                                "target": ".".join(
-                                                    [class_name, method_name]
-                                                ),
+                                                "target": ".".join([class_name, method_name]),
                                             }
                                         ],
                                         "weight": 1,
@@ -84,26 +80,15 @@ class TransformGraph:
                                     }
                                 else:
                                     found = False
-                                    for children in cls.links[
-                                        (class_name, db_table, txn_type)
-                                    ]["children"]:
-                                        if (
-                                            ".".join([class_name, method_name])
-                                            in children["target"]
-                                        ):
-                                            cls.links[(class_name, db_table, txn_type)][
-                                                "weight"
-                                            ] += 1
+                                    for children in cls.links[(class_name, db_table, txn_type)]["children"]:
+                                        if ".".join([class_name, method_name]) in children["target"]:
+                                            cls.links[(class_name, db_table, txn_type)]["weight"] += 1
                                             found = True
                                     if not found:
-                                        cls.links[(class_name, db_table, txn_type)][
-                                            "children"
-                                        ].append(
+                                        cls.links[(class_name, db_table, txn_type)]["children"].append(
                                             {
                                                 "source": db_table,
-                                                "target": ".".join(
-                                                    [class_name, method_name]
-                                                ),
+                                                "target": ".".join([class_name, method_name]),
                                             }
                                         )
 
@@ -125,9 +110,7 @@ class TransformGraph:
                                         "children": [
                                             {
                                                 "target": db_table,
-                                                "source": ".".join(
-                                                    [class_name, method_name]
-                                                ),
+                                                "source": ".".join([class_name, method_name]),
                                             }
                                         ],
                                         "weight": 1,
@@ -135,26 +118,15 @@ class TransformGraph:
                                     }
                                 else:
                                     found = False
-                                    for children in cls.links[
-                                        (class_name, db_table, txn_type)
-                                    ]["children"]:
-                                        if (
-                                            ".".join([class_name, method_name])
-                                            in children["source"]
-                                        ):
-                                            cls.links[(class_name, db_table, txn_type)][
-                                                "weight"
-                                            ] += 1
+                                    for children in cls.links[(class_name, db_table, txn_type)]["children"]:
+                                        if ".".join([class_name, method_name]) in children["source"]:
+                                            cls.links[(class_name, db_table, txn_type)]["weight"] += 1
                                             found = True
                                     if not found:
-                                        cls.links[(class_name, db_table, txn_type)][
-                                            "children"
-                                        ].append(
+                                        cls.links[(class_name, db_table, txn_type)]["children"].append(
                                             {
                                                 "target": db_table,
-                                                "source": ".".join(
-                                                    [class_name, method_name]
-                                                ),
+                                                "source": ".".join([class_name, method_name]),
                                             }
                                         )
                         except Exception as e:
@@ -203,13 +175,9 @@ class TransformGraph:
             cls.nodes[key]["class_partition"] = mode(class_node["method_partitions"])
             cls.nodes[key]["centrality"] = mean(class_node["centrality"])
             cls.nodes[key]["uncertainity"] = (
-                0
-                if len(class_node["method_partitions"]) < 2
-                else variance(class_node["method_partitions"])
+                0 if len(class_node["method_partitions"]) < 2 else variance(class_node["method_partitions"])
             )
-            cls.max_partitions = max(
-                cls.nodes[key]["class_partition"], cls.max_partitions
-            )
+            cls.max_partitions = max(cls.nodes[key]["class_partition"], cls.max_partitions)
 
             del cls.nodes[key]["methods"]
             del cls.nodes[key]["method_partitions"]
@@ -249,16 +217,10 @@ class TransformGraph:
                     }
 
                 else:
-                    link_weight = cls.links[(source_class, target_class, link_type)][
-                        "weight"
-                    ]
+                    link_weight = cls.links[(source_class, target_class, link_type)]["weight"]
                     link_weight += 1
-                    cls.links[(source_class, target_class, link_type)][
-                        "weight"
-                    ] = link_weight
-                    cls.links[(source_class, target_class, link_type)][
-                        "children"
-                    ].append(
+                    cls.links[(source_class, target_class, link_type)]["weight"] = link_weight
+                    cls.links[(source_class, target_class, link_type)]["children"].append(
                         {
                             "source": link["source"],
                             "target": link["target"],
@@ -268,15 +230,10 @@ class TransformGraph:
     @classmethod
     def _validate_nodes(cls):
         for link in cls.links.values():
-            assert (
-                link["source"] in cls.nodes.keys()
-                and link["target"] in cls.nodes.keys()
-            )
+            assert link["source"] in cls.nodes.keys() and link["target"] in cls.nodes.keys()
 
     @classmethod
-    def from_method_graph_to_class_graph(
-        cls, method_sdg_as_dict: Dict, transactions_as_dict: Dict = None
-    ) -> Dict:
+    def from_method_graph_to_class_graph(cls, method_sdg_as_dict: Dict) -> Dict:
         """
         Translate a method level SDG to a class level SDG.
 
@@ -293,9 +250,6 @@ class TransformGraph:
 
         cls._method_node_to_class_node(method_nodes)
         cls._method_link_to_class_link(method_links)
-
-        if transactions_as_dict is not None:
-            cls._transactions_to_graph(transactions_as_dict)
 
         class_graph["nodes"] = list(cls.nodes.values())
         class_graph["links"] = list(cls.links.values())
