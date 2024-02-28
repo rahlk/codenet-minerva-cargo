@@ -52,7 +52,7 @@ def minerva_cargo(
             "-s",
             help="Initial seeding stratreagy for the partitioning. It can be a path to a JSON file or one of the following: random_methods, random_classes.",
         ),
-    ] = "random_methods",
+    ] = "random_classes",
     max_partitions: Annotated[
         int,
         Option("--max-partitions", "-k", help="The maximum number of partitions."),
