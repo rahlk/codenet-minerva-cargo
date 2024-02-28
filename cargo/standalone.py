@@ -22,9 +22,7 @@ import json
 from cargo import Cargo
 
 
-app = Typer(
-    help="MKDATA: A tool to process Method2Test data to generate instruction tuning dataset for test generation."
-)
+app = Typer(help="")
 
 
 @app.command()
@@ -52,7 +50,7 @@ def minerva_cargo(
             "-s",
             help="Initial seeding stratreagy for the partitioning. It can be a path to a JSON file or one of the following: random_methods, random_classes.",
         ),
-    ] = "random_methods",
+    ] = "random_classes",
     max_partitions: Annotated[
         int,
         Option("--max-partitions", "-k", help="The maximum number of partitions."),

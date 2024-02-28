@@ -38,7 +38,8 @@ class Cargo:
         self,
         json_sdg_path: str,
     ):
-        self.graph = self.json2nx(json_sdg_path)
+        random.seed(42)  # Seed random number generator for reproducibility
+        self.json2nx(json_sdg_path)
 
     def json2nx(self, path_to_sdg_json: str) -> nx.MultiDiGraph:
         """Consume a JSON SDG to build a networkx graph out of it.
@@ -75,6 +76,18 @@ class Cargo:
             self.SDG.add_edge(node1, node2, weight=edge["weight"], type=edge["type"])
 
     def _assign_init_labels(self, init_labels, max_part, labels_file):
+        """Assign initial labels to the nodes in the graph.
+
+        Parameters
+        ----------
+        init_labels : str
+            The initial seeding stratreagy for the partitioning. It can be a path to a JSON file or one of the following: random_methods, random_classes.
+        max_part : int
+            The maximum number of partitions.
+        labels_file : Union[str, Path, None]
+            Path to the file containing the initial partitioning. This is only used if init_labels is set to "file".
+        """
+        # TODO: Copy over package name seeding here...
         if init_labels == "random_methods":
             for i, node in enumerate(self.SDG.nodes):
                 if max_part < 2:
@@ -107,6 +120,7 @@ class Cargo:
                 self.SDG.nodes[node]["partition"] = class_partition_map[class_attr]
 
         elif init_labels == "file":
+            # TODO: This assumes that the JSON has method partitions.
             if labels_file is None:
                 raise Exception("File name must be provided if init_labels='file'")
 
@@ -135,12 +149,14 @@ class Cargo:
 
             for node in nodes:
                 labels_list = []
+
                 for neighbor in self.SDG.neighbors(node):
                     weight = self.SDG[node][neighbor].get(0)["weight"]
                     neighbor_label = self.SDG.nodes[neighbor]["partition"]
                     labels_list.extend([neighbor_label] * int(weight))
+
                 if labels_list:
-                    new_label = mode(labels_list)
+                    new_label = mode(labels_list)  # TODO: check if mode works on string labels.
                     if new_label != self.SDG.nodes[node]["partition"]:
                         self.SDG.nodes[node]["partition"] = new_label
                         changes += 1
@@ -169,8 +185,6 @@ class Cargo:
         self._assign_init_labels(init_labels, max_part, labels_file)
         self._propogate_labels()
         assignments = nx.get_node_attributes(self.SDG, "partition")
-
-        partition_sizes = np.unique(list(assignments.values()), return_counts=True)[1]
 
         # Compute the centrality of the nodes
         nx.set_node_attributes(self.SDG, nx.degree_centrality(self.SDG), "data_centrality")
