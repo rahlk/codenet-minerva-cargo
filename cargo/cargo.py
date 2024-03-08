@@ -55,7 +55,7 @@ class Cargo:
             node_attr = group.__next__()
             self.nodes_dict[key] = node_attr
             node_id = node_attr["id"]
-            self.SDG.add_node(node_id, partition=None, **node_attr)
+            self.SDG.add_node(node_id, partition=None, modified=False, **node_attr)
 
         # Populate the edges
         for edge in self.json_graph["links"]:
@@ -100,6 +100,7 @@ class Cargo:
         for i, (node, data) in enumerate(self.SDG.nodes(data=True)):
             class_attr = data.get("class")
             if class_attr not in class_partition_map:
+                # TODO: allow other ways to define initial label, like by package names
                 if max_part < 2:
                     partition_value = i
                 else:
@@ -228,6 +229,7 @@ class Cargo:
                     new_label = mode(labels_list)  # TODO: check if mode works on string labels.
                     if new_label != self.SDG.nodes[node]["partition"]:
                         self.SDG.nodes[node]["partition"] = new_label
+                        self.SDG.nodes[node]["modified"] = True
                         changes += 1
 
             if changes == 0:
@@ -254,6 +256,7 @@ class Cargo:
         self._assign_init_labels(init_labels, max_part, labels_file)
         self._propogate_labels()
         assignments = nx.get_node_attributes(self.SDG, "partition")
+        modifiedAssignments = nx.get_node_attributes(self.SDG, "modified")
 
         # Compute the centrality of the nodes
         nx.set_node_attributes(self.SDG, nx.degree_centrality(self.SDG), "data_centrality")
@@ -261,7 +264,8 @@ class Cargo:
         method_graph_view = self.json_graph
 
         for method_node in method_graph_view["nodes"]:
-            # TODO: for daytrader7 there is 208 assignments, however, the sdg contains 308 nodes
+            # if method_node["id"] in assignments: # consider include an else with some logs
+            method_node["modified"] = modifiedAssignments[method_node["id"]]
             method_node["partition"] = assignments[method_node["id"]]
 
             try:

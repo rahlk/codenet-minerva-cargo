@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright IBM Corporate 2023
+# Copyright IBM Corporate 2023, 2024
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,5 +15,3 @@
 ################################################################################
 
 from .transform_graph import TransformGraph
-
-# from .logging import Log

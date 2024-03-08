@@ -7,7 +7,7 @@ networkx==2.8.8
 # prod
 py2neo==2021.2.4
 ipdb==0.13.13
-tqdm==4.66.1
+tqdm==4.66.1 #probably remove it in future because it is just for progress bar
 # scikit-learn==1.4.0
 # tackle-dgi==0.1.0
 mo-sql-parsing==9.422.23190
