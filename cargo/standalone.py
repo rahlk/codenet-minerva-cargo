@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright IBM Corporate 2023
+# Copyright IBM Corporate 2023, 2024
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -48,9 +48,9 @@ def minerva_cargo(
         Option(
             "--seed-partitions",
             "-s",
-            help="Initial seeding stratreagy for the partitioning. It can be a path to a JSON file or one of the following: random_methods, random_classes.",
+            help="Initial seeding stratreagy for the partitioning. It can be a path to a JSON file or one of the following: random_methods, random_classes, package_names.",
         ),
-    ] = "random_classes",
+    ] = "package_names",
     max_partitions: Annotated[
         int,
         Option("--max-partitions", "-k", help="The maximum number of partitions."),
@@ -67,6 +67,8 @@ def minerva_cargo(
         seed_partitions = "random_classes"
     elif Path(seed_partitions).exists():
         seed_partitions = json.load(open(seed_partitions))
+    else:
+        seed_partitions = "package_names"
 
     cargo = Cargo(json_sdg_path=app_dependency_graph)
     partitions = cargo.execute(init_labels=seed_partitions, max_part=max_partitions)

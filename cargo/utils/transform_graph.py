@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright IBM Corporate 2023
+# Copyright IBM Corporate 2023, 2024
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -140,12 +140,13 @@ class TransformGraph:
 
         for method_node in method_nodes:
             _class = method_node["class"]
+            meth_partition_node = {"partition": method_node["partition"], "modified":method_node["modified"]}
 
             if _class not in cls.nodes:
                 class_node = {
                     "name": _class,
                     "methods": {method_node["method"]},
-                    "method_partitions": [method_node["partition"]],
+                    "method_partitions": [meth_partition_node],
                     "centrality": [method_node["centrality"]],
                     "type": "ClassNode",
                 }
@@ -155,7 +156,7 @@ class TransformGraph:
                 class_node = cls.nodes[_class]
                 class_node["methods"].add(method_node["method"])
                 class_node["centrality"].append(method_node["centrality"])
-                class_node["method_partitions"].append(method_node["partition"])
+                class_node["method_partitions"].append(meth_partition_node)
 
         # Regroup method partitions to find a class partition assigment.
         for key, class_node in cls.nodes.items():
@@ -172,12 +173,19 @@ class TransformGraph:
                     class_node["centrality"],
                 )
             ]
-            cls.nodes[key]["class_partition"] = mode(class_node["method_partitions"])
+
+            # filter the partitions that were not labeled during LP algorithm
+            partitions_list = [ i["partition"] for i in class_node["method_partitions"] if i["modified"]]
+            if len(partitions_list) <= 0:
+                # we need to use the initial label in this case
+                partitions_list = [ i["partition"] for i in class_node["method_partitions"] if i["modified"] == False]
+
+            cls.nodes[key]["class_partition"] = mode(partitions_list)
             cls.nodes[key]["centrality"] = mean(class_node["centrality"])
             cls.nodes[key]["uncertainity"] = (
-                0 if len(class_node["method_partitions"]) < 2 else variance(class_node["method_partitions"])
+                0 if len(partitions_list) < 2 else variance(partitions_list) #TODO: can't use variance with string
             )
-            cls.max_partitions = max(cls.nodes[key]["class_partition"], cls.max_partitions)
+            cls.max_partitions = max(cls.nodes[key]["class_partition"], cls.max_partitions) #TODO: can't use variance with string
 
             del cls.nodes[key]["methods"]
             del cls.nodes[key]["method_partitions"]
